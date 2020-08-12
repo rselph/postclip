@@ -3,23 +3,27 @@ package main
 import (
 	"flag"
 	"image"
+	"image/color"
+	"image/draw"
 	_ "image/gif"
-	_ "image/jpeg"
+	"image/jpeg"
 	_ "image/png"
 	"log"
 	"os"
 	"runtime"
 	"sync"
 
+	"github.com/nfnt/resize"
+
 	_ "golang.org/x/image/tiff"
 )
 
-type service struct {
+type serviceType struct {
 	name  string
 	sizes []image.Point
 }
 
-var services = []service{
+var services = []*serviceType{
 	{"instagram", []image.Point{
 		{1080, 1080},
 		{1080, 608},
@@ -39,6 +43,9 @@ var services = []service{
 		{1000, 1500},
 	}},
 }
+
+var backgroundColor = color.Gray{Y: 32}
+var background = image.NewUniform(backgroundColor)
 
 func main() {
 	flag.Parse()
@@ -69,18 +76,64 @@ func doFile(fname string) {
 		log.Print(err)
 		return
 	}
-	defer f.Close()
 
 	original, _, err := image.Decode(f)
+	_ = f.Close()
 	if err != nil {
 		log.Print(err)
 		return
 	}
 
-	services[0].bestBounds(original.Bounds())
+	for _, service := range services {
+		composite := doService(service, original)
+		outName := fname + "_" + service.name + ".jpg"
+		o, err := os.Create(outName)
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		err = jpeg.Encode(o, composite, &jpeg.Options{Quality: 80})
+		if err != nil {
+			log.Print(err)
+		}
+
+		err = o.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}
 }
 
-func (s *service) bestBounds(in image.Rectangle) (container, inset image.Rectangle) {
+func doService(s *serviceType, original image.Image) image.Image {
+	compositeRect, _ := s.bestBounds(original.Bounds())
+
+	composite := image.NewRGBA(compositeRect)
+
+	inset := resize.Thumbnail(uint(compositeRect.Max.X), uint(compositeRect.Max.Y),
+		original, resize.Lanczos3)
+
+	draw.Draw(composite, composite.Bounds(), background, image.Point{}, draw.Src)
+	compositeMid := image.Point{
+		X: composite.Bounds().Min.X + composite.Bounds().Dx()/2,
+		Y: composite.Bounds().Min.Y + composite.Bounds().Dy()/2,
+	}
+	insetMid := image.Point{
+		X: inset.Bounds().Dx() / 2,
+		Y: inset.Bounds().Dy() / 2,
+	}
+	compositArea := image.Rect(
+		compositeMid.X-insetMid.X, compositeMid.Y-insetMid.Y,
+		compositeMid.X+insetMid.X, compositeMid.Y+insetMid.Y,
+	)
+	draw.Draw(composite, compositArea, inset,
+		image.Point{},
+		draw.Src)
+
+	return composite
+}
+
+func (s *serviceType) bestBounds(in image.Rectangle) (container, inset image.Rectangle) {
 	coverage := 0.0
 
 	inAspect := float64(in.Dx()) / float64(in.Dy())
