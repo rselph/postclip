@@ -32,16 +32,16 @@ var services = []*serviceType{
 	{"facebook", []image.Point{
 		{1200, 1200},
 	}},
-	{"twitter", []image.Point{
-		{1024, 512},
-	}},
-	{"linkedin", []image.Point{
-		{1400, 800},
-	}},
-	{"pinterest", []image.Point{
-		{1000, 1000},
-		{1000, 1500},
-	}},
+	//{"twitter", []image.Point{
+	//	{1024, 512},
+	//}},
+	//{"linkedin", []image.Point{
+	//	{1400, 800},
+	//}},
+	//{"pinterest", []image.Point{
+	//	{1000, 1000},
+	//	{1000, 1500},
+	//}},
 }
 
 var backgroundColor = color.Gray{Y: 32}
