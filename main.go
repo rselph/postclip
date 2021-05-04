@@ -44,6 +44,8 @@ var services = []*serviceType{
 	//}},
 }
 
+var smallSize = image.Point{1200, 1200}
+
 var backgroundColor = color.Gray{Y: 32}
 var background = image.NewUniform(backgroundColor)
 
@@ -66,6 +68,7 @@ func main() {
 func worker(in chan string, done *sync.WaitGroup) {
 	for fname := range in {
 		doFile(fname)
+		doSmallFile(fname)
 	}
 	done.Done()
 }
@@ -102,6 +105,41 @@ func doFile(fname string) {
 		if err != nil {
 			log.Print(err)
 		}
+	}
+}
+
+func doSmallFile(fname string) {
+	f, err := os.Open(fname)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	original, _, err := image.Decode(f)
+	_ = f.Close()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	composite := resize.Thumbnail(uint(smallSize.X), uint(smallSize.Y),
+		original, resize.Lanczos3)
+
+	outName := fname + "_small.jpg"
+	o, err := os.Create(outName)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	err = jpeg.Encode(o, composite, &jpeg.Options{Quality: 80})
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = o.Close()
+	if err != nil {
+		log.Print(err)
 	}
 }
 
