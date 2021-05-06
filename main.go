@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"github.com/nfnt/resize"
-
 	_ "golang.org/x/image/tiff"
 )
 
@@ -125,7 +124,7 @@ func doSmallFile(fname string) {
 	composite := resize.Thumbnail(uint(smallSize.X), uint(smallSize.Y),
 		original, resize.Lanczos3)
 
-	outName := fname + "_small.jpg"
+	outName := fname + "_base.jpg"
 	o, err := os.Create(outName)
 	if err != nil {
 		log.Print(err)
