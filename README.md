@@ -1,2 +1,3 @@
 # postclip
-Produce optimized crops of an image for several social media sites.
+
+Produce optimized crop of an image for Instagram.
