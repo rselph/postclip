@@ -17,33 +17,7 @@ import (
 	_ "golang.org/x/image/tiff"
 )
 
-type serviceType struct {
-	name  string
-	sizes []image.Point
-}
-
-var services = []*serviceType{
-	{"instagram", []image.Point{
-		{1080, 1080},
-		{1080, 608},
-		{1080, 1350},
-	}},
-	{"facebook", []image.Point{
-		{1200, 1200},
-	}},
-	//{"twitter", []image.Point{
-	//	{1024, 512},
-	//}},
-	//{"linkedin", []image.Point{
-	//	{1400, 800},
-	//}},
-	//{"pinterest", []image.Point{
-	//	{1000, 1000},
-	//	{1000, 1500},
-	//}},
-}
-
-var smallSize = image.Point{1200, 1200}
+// Instagram 1080 wide by 566 - 1350 high
 
 var backgroundColor = color.Gray{Y: 32}
 var background = image.NewUniform(backgroundColor)
@@ -67,7 +41,6 @@ func main() {
 func worker(in chan string, done *sync.WaitGroup) {
 	for fname := range in {
 		doFile(fname)
-		doSmallFile(fname)
 	}
 	done.Done()
 }
@@ -86,45 +59,8 @@ func doFile(fname string) {
 		return
 	}
 
-	for _, service := range services {
-		composite := doService(service, original)
-		outName := fname + "_" + service.name + ".jpg"
-		o, err := os.Create(outName)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		err = jpeg.Encode(o, composite, &jpeg.Options{Quality: 80})
-		if err != nil {
-			log.Print(err)
-		}
-
-		err = o.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}
-}
-
-func doSmallFile(fname string) {
-	f, err := os.Open(fname)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	original, _, err := image.Decode(f)
-	_ = f.Close()
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	composite := resize.Thumbnail(uint(smallSize.X), uint(smallSize.Y),
-		original, resize.Lanczos3)
-
-	outName := fname + "_base.jpg"
+	composite := doImage(original)
+	outName := fname + "_insta.jpg"
 	o, err := os.Create(outName)
 	if err != nil {
 		log.Print(err)
@@ -142,15 +78,29 @@ func doSmallFile(fname string) {
 	}
 }
 
-func doService(s *serviceType, original image.Image) image.Image {
-	compositeRect, _ := s.bestBounds(original.Bounds())
-
-	composite := image.NewRGBA(compositeRect)
-
-	inset := resize.Thumbnail(uint(compositeRect.Max.X), uint(compositeRect.Max.Y),
+func doImage(original image.Image) image.Image {
+	inset := resize.Thumbnail(1080, 1350,
 		original, resize.Lanczos3)
 
+	var composite *image.RGBA
+	switch {
+	case inset.Bounds().Dx() < 1080:
+		// If inset width < 1080, it's too tall.  Add side borders to reach 1080 wide.
+		composite = image.NewRGBA(image.Rect(0, 0, 1080, 1350))
+
+	case inset.Bounds().Dy() < 566:
+		// If inset height < 566, it's too wide.  Add top and bottom borders to reach 566 high.
+		composite = image.NewRGBA(image.Rect(0, 0, 1080, 566))
+
+	default:
+		// Image size is great
+		return inset
+	}
+
+	// Start with just the background color
 	draw.Draw(composite, composite.Bounds(), background, image.Point{}, draw.Src)
+
+	// Draw the inset in the middle of the composite
 	compositeMid := image.Point{
 		X: composite.Bounds().Min.X + composite.Bounds().Dx()/2,
 		Y: composite.Bounds().Min.Y + composite.Bounds().Dy()/2,
@@ -168,37 +118,4 @@ func doService(s *serviceType, original image.Image) image.Image {
 		draw.Src)
 
 	return composite
-}
-
-func (s *serviceType) bestBounds(in image.Rectangle) (container, inset image.Rectangle) {
-	coverage := 0.0
-
-	inAspect := float64(in.Dx()) / float64(in.Dy())
-	inX := float64(in.Dx())
-	inY := float64(in.Dy())
-	for _, size := range s.sizes {
-		sizeAspect := float64(size.X) / float64(size.Y)
-		sizeX := float64(size.X)
-		sizeY := float64(size.Y)
-		var sizeCoverage, ratio float64
-		switch {
-		case inAspect == sizeAspect:
-			sizeCoverage = 1.0
-			ratio = sizeX / inX
-		case inAspect < sizeAspect:
-			sizeCoverage = (inX / sizeX) * (sizeY / inY)
-			ratio = sizeY / inY
-		case inAspect > sizeAspect:
-			sizeCoverage = (inY / sizeY) * (sizeX / inX)
-			ratio = sizeX / inX
-		}
-
-		if sizeCoverage > coverage {
-			coverage = sizeCoverage
-			container.Max = size
-			inset.Max = image.Point{int(inX * ratio), int(inY * ratio)}
-		}
-	}
-
-	return
 }
