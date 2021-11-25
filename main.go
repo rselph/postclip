@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	_ "image/png"
 	"log"
+	"math"
 	"os"
 	"runtime"
 	"sync"
@@ -19,11 +20,28 @@ import (
 
 // Instagram 1080 wide by 566 - 1350 high
 
-var backgroundColor = color.Gray{Y: 32}
-var background = image.NewUniform(backgroundColor)
+var background image.Image
 
 func main() {
+	var (
+		backgroundGray float64
+		white          bool
+		black          bool
+	)
+
+	flag.Float64Var(&backgroundGray, "background", 0.125,
+		"background gray, 0.0 to 1.0")
+	flag.BoolVar(&white, "white", false, "white background")
+	flag.BoolVar(&black, "black", false, "black background")
 	flag.Parse()
+
+	if white {
+		backgroundGray = 1
+	}
+	if black {
+		backgroundGray = 0
+	}
+	background = image.NewUniform(color.Gray{Y: uint8(backgroundGray * math.MaxUint8)})
 
 	wg := sync.WaitGroup{}
 	jobs := make(chan string)
