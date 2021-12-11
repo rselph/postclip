@@ -27,20 +27,27 @@ func main() {
 		backgroundGray float64
 		white          bool
 		black          bool
+		gray           bool
 	)
 
-	flag.Float64Var(&backgroundGray, "background", 0.125,
+	flag.Float64Var(&backgroundGray, "background", 1,
 		"background gray, 0.0 to 1.0")
 	flag.BoolVar(&white, "white", false, "white background")
 	flag.BoolVar(&black, "black", false, "black background")
+	flag.BoolVar(&gray, "gray", false, "gray background")
 	flag.Parse()
 
-	if white {
+	switch {
+	case white:
+		backgroundGray = 1
+	case black:
+		backgroundGray = 0
+	case gray:
+		backgroundGray = 0.125
+	default:
 		backgroundGray = 1
 	}
-	if black {
-		backgroundGray = 0
-	}
+
 	background = image.NewUniform(color.Gray{Y: uint8(backgroundGray * math.MaxUint8)})
 
 	wg := sync.WaitGroup{}
