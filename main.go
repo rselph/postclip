@@ -20,7 +20,10 @@ import (
 
 // Instagram 1080 wide by 566 - 1350 high
 
-var background image.Image
+var (
+	solidBackground image.Image
+	blurBackground  bool
+)
 
 func main() {
 	var (
@@ -35,6 +38,7 @@ func main() {
 	flag.BoolVar(&white, "white", false, "white background")
 	flag.BoolVar(&black, "black", false, "black background")
 	flag.BoolVar(&gray, "gray", false, "gray background")
+	flag.BoolVar(&blurBackground, "blur", false, "blurred background")
 	flag.Parse()
 
 	switch {
@@ -48,7 +52,7 @@ func main() {
 		backgroundGray = 1
 	}
 
-	background = image.NewUniform(color.Gray{Y: uint8(backgroundGray * math.MaxUint8)})
+	solidBackground = image.NewUniform(color.Gray{Y: uint8(backgroundGray * math.MaxUint8)})
 
 	wg := sync.WaitGroup{}
 	jobs := make(chan string)
@@ -120,6 +124,13 @@ func doImage(original image.Image) image.Image {
 	default:
 		// Image size is great
 		return inset
+	}
+
+	var background image.Image
+	if blurBackground {
+		background = backgroundForImage(original, composite.Bounds())
+	} else {
+		background = solidBackground
 	}
 
 	// Start with just the background color
