@@ -60,7 +60,12 @@ func main() {
 	jobs := make(chan string)
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
-		go worker(jobs, &wg)
+		go func() {
+			defer wg.Done()
+			for fname := range jobs {
+				doFile(fname)
+			}
+		}()
 	}
 	for _, filename := range flag.Args() {
 		if !strings.HasSuffix(filename, fileSuffix) {
@@ -69,13 +74,6 @@ func main() {
 	}
 	close(jobs)
 	wg.Wait()
-}
-
-func worker(in chan string, done *sync.WaitGroup) {
-	for fname := range in {
-		doFile(fname)
-	}
-	done.Done()
 }
 
 func doFile(fname string) {
