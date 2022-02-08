@@ -11,14 +11,16 @@ import (
 	"log"
 	"math"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/tiff"
 )
 
-// Instagram 1080 wide by 566 - 1350 high
+const fileSuffix = "_insta.jpg"
 
 var (
 	solidBackground image.Image
@@ -61,7 +63,9 @@ func main() {
 		go worker(jobs, &wg)
 	}
 	for _, filename := range flag.Args() {
-		jobs <- filename
+		if !strings.HasSuffix(filename, fileSuffix) {
+			jobs <- filename
+		}
 	}
 	close(jobs)
 	wg.Wait()
@@ -89,7 +93,7 @@ func doFile(fname string) {
 	}
 
 	composite := doImage(original)
-	outName := fname + "_insta.jpg"
+	outName := strings.TrimSuffix(fname, filepath.Ext(fname)) + fileSuffix
 	o, err := os.Create(outName)
 	if err != nil {
 		log.Print(err)
