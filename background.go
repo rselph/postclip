@@ -13,8 +13,8 @@ import (
 // If either width or height is 0, the aspect ratio is preserved.
 func resizeImage(src image.Image, width, height uint) image.Image {
 	srcBounds := src.Bounds()
-	srcW := srcBounds.Dx()
-	srcH := srcBounds.Dy()
+	srcW := float64(srcBounds.Dx())
+	srcH := float64(srcBounds.Dy())
 
 	// Calculate target dimensions preserving aspect ratio if needed
 	var dstW, dstH int
@@ -22,10 +22,10 @@ func resizeImage(src image.Image, width, height uint) image.Image {
 		return src
 	} else if width == 0 {
 		dstH = int(height)
-		dstW = srcW * dstH / srcH
+		dstW = int(srcW * float64(dstH) / srcH)
 	} else if height == 0 {
 		dstW = int(width)
-		dstH = srcH * dstW / srcW
+		dstH = int(srcH * float64(dstW) / srcW)
 	} else {
 		dstW = int(width)
 		dstH = int(height)
