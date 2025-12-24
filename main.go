@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nfnt/resize"
+	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/tiff"
 )
 
@@ -114,9 +114,29 @@ const (
 	minAspectRatio = 1080.0 / 1350.0
 )
 
+// thumbnail creates a thumbnail of the image that fits within the specified dimensions,
+// preserving aspect ratio.
+func thumbnail(src image.Image, maxWidth, maxHeight uint) image.Image {
+	srcBounds := src.Bounds()
+	srcW := float64(srcBounds.Dx())
+	srcH := float64(srcBounds.Dy())
+
+	// Calculate the scaling factor to fit within maxWidth x maxHeight
+	scaleW := float64(maxWidth) / srcW
+	scaleH := float64(maxHeight) / srcH
+	scale := math.Min(scaleW, scaleH)
+
+	// Calculate target dimensions
+	dstW := int(srcW * scale)
+	dstH := int(srcH * scale)
+
+	dst := image.NewRGBA(image.Rect(0, 0, dstW, dstH))
+	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, srcBounds, xdraw.Over, nil)
+	return dst
+}
+
 func doImage(original image.Image) image.Image {
-	inset := resize.Thumbnail(1080, 1350,
-		original, resize.Lanczos3)
+	inset := thumbnail(original, 1080, 1350)
 
 	var width, height int
 	aspectRatio := float64(inset.Bounds().Dx()) / float64(inset.Bounds().Dy())
