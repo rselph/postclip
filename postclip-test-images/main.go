@@ -17,16 +17,17 @@ var (
 		8.5 / 11.0, 11.0 / 8.5,
 		2.0 / 3.0, 3.0 / 2.0,
 		9.0 / 16.0, 16.0 / 9.0,
-		2.0, 0.5,
+		1.0 / 2.0, 2.0 / 1.0,
+		1.0 / 3.0, 3.0 / 1.0,
 		1.0}
 
 	important_sizes = []ImageSize{
 		{"sm", image.Rect(0, 0, 600, 0)},
 		{"sm", image.Rect(0, 0, 0, 315)},
-		{"md", image.Rect(0, 0, 1200, 0)},
-		{"md", image.Rect(0, 0, 0, 630)},
-		{"lg", image.Rect(0, 0, 2400, 0)},
-		{"lg", image.Rect(0, 0, 0, 1260)},
+		{"md", image.Rect(0, 0, 1080, 0)},
+		{"md", image.Rect(0, 0, 0, 1350)},
+		{"lg", image.Rect(0, 0, 3000, 0)},
+		{"lg", image.Rect(0, 0, 0, 3000)},
 	}
 )
 
@@ -59,7 +60,8 @@ func main() {
 
 // saveImage saves the generated image to disk with a filename based on the ratio.
 func saveImage(name string, img image.Image) error {
-	filename := fmt.Sprintf("test-%s-%04dx%04d.png", name, img.Bounds().Dx(), img.Bounds().Dy())
+	aspectRatio := float64(img.Bounds().Dx()) / float64(img.Bounds().Dy())
+	filename := fmt.Sprintf("test-%s-%1.2f.png", name, aspectRatio)
 
 	out, err := os.Create(filename)
 	if err != nil {
