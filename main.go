@@ -126,7 +126,9 @@ func thumbnail(src image.Image, maxWidth, maxHeight uint) image.Image {
 	scaleH := float64(maxHeight) / srcH
 	scale := math.Min(scaleW, scaleH)
 
-	// Only scale down, never up
+	// Return original image if it's already smaller than the target dimensions.
+	// A scale >= 1.0 means the image would need to be upscaled, which we avoid
+	// to preserve image quality and prevent unnecessary processing.
 	if scale >= 1.0 {
 		return src
 	}
