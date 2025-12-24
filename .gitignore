@@ -4,6 +4,8 @@
 *.dll
 *.so
 *.dylib
+postclip
+postclip-test-images/test-image-gen
 
 # Test binary, built with `go test -c`
 *.test
@@ -16,6 +18,8 @@
 
 # test images
 test-images/
+postclip-test-images/*.png
+postclip-test-images/*.jpg
 
 .idea/
 .vscode/

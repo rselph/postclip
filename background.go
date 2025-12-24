@@ -1,12 +1,40 @@
 package main
 
 import (
-	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"math"
 	"sync"
+
+	"golang.org/x/image/draw"
 )
+
+// resizeImage resizes an image to the specified dimensions.
+// If either width or height is 0, the aspect ratio is preserved.
+func resizeImage(src image.Image, width, height uint) image.Image {
+	srcBounds := src.Bounds()
+	srcW := float64(srcBounds.Dx())
+	srcH := float64(srcBounds.Dy())
+
+	// Calculate target dimensions preserving aspect ratio if needed
+	var dstW, dstH int
+	if width == 0 && height == 0 {
+		return src
+	} else if width == 0 {
+		dstH = int(height)
+		dstW = int(srcW * float64(dstH) / srcH)
+	} else if height == 0 {
+		dstW = int(width)
+		dstH = int(srcH * float64(dstW) / srcW)
+	} else {
+		dstW = int(width)
+		dstH = int(height)
+	}
+
+	dst := image.NewRGBA(image.Rect(0, 0, dstW, dstH))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, srcBounds, draw.Over, nil)
+	return dst
+}
 
 func backgroundForImage(original image.Image, bounds image.Rectangle) (out image.Image) {
 	w := uint(bounds.Dx())
@@ -18,7 +46,7 @@ func backgroundForImage(original image.Image, bounds image.Rectangle) (out image
 		h = 0
 	}
 
-	smaller := resize.Resize(w, h, original, resize.Lanczos3)
+	smaller := resizeImage(original, w, h)
 	out = gaussianBlur(smaller, 20.0)
 
 	return
