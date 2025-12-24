@@ -115,7 +115,7 @@ const (
 )
 
 // thumbnail creates a thumbnail of the image that fits within the specified dimensions,
-// preserving aspect ratio.
+// preserving aspect ratio. The image is only scaled down, never up.
 func thumbnail(src image.Image, maxWidth, maxHeight uint) image.Image {
 	srcBounds := src.Bounds()
 	srcW := float64(srcBounds.Dx())
@@ -125,6 +125,11 @@ func thumbnail(src image.Image, maxWidth, maxHeight uint) image.Image {
 	scaleW := float64(maxWidth) / srcW
 	scaleH := float64(maxHeight) / srcH
 	scale := math.Min(scaleW, scaleH)
+
+	// Only scale down, never up
+	if scale >= 1.0 {
+		return src
+	}
 
 	// Calculate target dimensions
 	dstW := int(srcW * scale)
