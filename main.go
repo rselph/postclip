@@ -109,25 +109,38 @@ func doFile(fname string) {
 	}
 }
 
+const (
+	maxAspectRatio = 1080.0 / 566.0
+	minAspectRatio = 1080.0 / 1350.0
+)
+
 func doImage(original image.Image) image.Image {
 	inset := resize.Thumbnail(1080, 1350,
 		original, resize.Lanczos3)
 
-	var composite *image.RGBA
-	switch {
-	case inset.Bounds().Dx() < 1080:
-		// If inset width < 1080, it's too tall.  Add side borders to reach 1080 wide.
-		composite = image.NewRGBA(image.Rect(0, 0, 1080, 1350))
+	var width, height int
+	aspectRatio := float64(inset.Bounds().Dx()) / float64(inset.Bounds().Dy())
 
-	case inset.Bounds().Dy() < 566:
+	switch {
+	case aspectRatio >= minAspectRatio && aspectRatio <= maxAspectRatio:
+		// It's already in the allowed range, so no borders needed.
+		return inset
+
+	case aspectRatio < minAspectRatio:
+		// If inset width < 1080, it's too tall.  Add side borders to reach 1080 wide.
+		height = inset.Bounds().Dy()
+		width = int(float64(height) * minAspectRatio)
+
+	case aspectRatio > maxAspectRatio:
 		// If inset height < 566, it's too wide.  Add top and bottom borders to reach 566 high.
-		composite = image.NewRGBA(image.Rect(0, 0, 1080, 566))
+		width = inset.Bounds().Dx()
+		height = int(float64(width) / maxAspectRatio)
 
 	default:
-		// Image size is great
-		return inset
+		panic("unreachable")
 	}
 
+	composite := image.NewRGBA(image.Rect(0, 0, width, height))
 	var background image.Image
 	if blurBackground {
 		background = backgroundForImage(original, composite.Bounds())
